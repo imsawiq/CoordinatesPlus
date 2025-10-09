@@ -1,0 +1,28 @@
+{
+  "key.coordinatesplus.edit_mode": "Toggle Edit Mode",
+  "key.coordinatesplus.send_overworld": "Send Overworld Coordinates",
+  "key.coordinatesplus.send_nether": "Send Nether Coordinates",
+  "category.coordinatesplus": "Coordinates Plus",
+
+  "text.coordinatesplus.config.title": "Coordinates Plus Configuration",
+  "text.coordinatesplus.config.category.display": "Display Settings",
+  "text.coordinatesplus.config.category.keybinds": "Keybind Settings",
+  "text.coordinatesplus.config.category.position": "Position",
+
+  "text.coordinatesplus.config.hud_enabled": "Enable HUD",
+  "text.coordinatesplus.config.hud_enabled.tooltip": "Show or hide the coordinates HUD",
+  "text.coordinatesplus.config.background_enabled": "Enable Background",
+  "text.coordinatesplus.config.background_enabled.tooltip": "Show or hide the HUD background panel",
+  "text.coordinatesplus.config.text_scale": "HUD Scale",
+  "text.coordinatesplus.config.text_scale.tooltip": "Adjust the size of the HUD",
+  "text.coordinatesplus.config.command_prefix": "Add ! Prefix to Commands",
+  "text.coordinatesplus.config.command_prefix.tooltip": "Add ! before coordinate commands (e.g., !+locn)",
+  "text.coordinatesplus.config.hud_x": "X Position",
+  "text.coordinatesplus.config.hud_x.tooltip": "Horizontal position of the HUD",
+  "text.coordinatesplus.config.hud_y": "Y Position",
+  "text.coordinatesplus.config.hud_y.tooltip": "Vertical position of the HUD",
+
+  "text.coordinatesplus.dimension.overworld": "Overworld",
+  "text.coordinatesplus.dimension.nether": "Nether",
+  "text.coordinatesplus.dimension.end": "N/A"
+}

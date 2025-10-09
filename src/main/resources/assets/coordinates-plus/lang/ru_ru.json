@@ -1,0 +1,28 @@
+{
+  "key.coordinatesplus.edit_mode": "Переключить режим редактирования",
+  "key.coordinatesplus.send_overworld": "Отправить координаты Оверворлда",
+  "key.coordinatesplus.send_nether": "Отправить координаты Незера",
+  "category.coordinatesplus": "Coordinates Plus",
+
+  "text.coordinatesplus.config.title": "Настройки Coordinates Plus",
+  "text.coordinatesplus.config.category.display": "Настройки отображения",
+  "text.coordinatesplus.config.category.keybinds": "Настройки кейбиндов",
+  "text.coordinatesplus.config.category.position": "Позиция",
+
+  "text.coordinatesplus.config.hud_enabled": "Включить HUD",
+  "text.coordinatesplus.config.hud_enabled.tooltip": "Показать или скрыть HUD координат",
+  "text.coordinatesplus.config.background_enabled": "Включить фон",
+  "text.coordinatesplus.config.background_enabled.tooltip": "Показать или скрыть фоновую панель HUD",
+  "text.coordinatesplus.config.text_scale": "Масштаб HUD",
+  "text.coordinatesplus.config.text_scale.tooltip": "Настроить размер HUD",
+  "text.coordinatesplus.config.command_prefix": "Добавлять ! перед командами",
+  "text.coordinatesplus.config.command_prefix.tooltip": "Добавлять ! перед командами координат (например, !+locn)",
+  "text.coordinatesplus.config.hud_x": "Позиция X",
+  "text.coordinatesplus.config.hud_x.tooltip": "Горизонтальная позиция HUD",
+  "text.coordinatesplus.config.hud_y": "Позиция Y",
+  "text.coordinatesplus.config.hud_y.tooltip": "Вертикальная позиция HUD",
+
+  "text.coordinatesplus.dimension.overworld": "Оверворлд",
+  "text.coordinatesplus.dimension.nether": "Незер",
+  "text.coordinatesplus.dimension.end": "Н/Д"
+}

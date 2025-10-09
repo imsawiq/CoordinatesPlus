@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "coordinates-plus",
+	"version": "${version}",
+	"name": "Coordinates Plus",
+	"description": "A stylish, draggable coordinates HUD with dimension-themed colors and quick coordinate sharing for Minecraft 1.21+",
+	"authors": [
+		"sawiq"
+	],
+	"contact": {},
+	"assetSource": true,
+	"license": "CC0-1.0",
+	"icon": "assets/coordinates-plus/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"org.sawiq.CoordinatesPlus"
+		],
+		"modmenu": [
+			"org.sawiq.config.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		"coordinates-plus.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"modmenu": ">=11.0.0",
+		"cloth-config": ">=15.0.127"
+	}
+}
