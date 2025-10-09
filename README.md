@@ -1,3 +1,5 @@
+https://modrinth.com/mod/coordinatesplus
+
 # English:
 
 **Coordinates Plus** is a client-side Fabric mod for Minecraft that provides a modern, customizable coordinates display with beautiful dimension-themed styling and convenient coordinate sharing features.
