@@ -7,7 +7,10 @@
 	"authors": [
 		"sawiq"
 	],
-	"contact": {},
+	"contact": {
+		"homepage": "https://modrinth.com/mod/CoordinatesPlus",
+		"sources": "https://github.com/imsawiq/CoordinatesPlus"
+	},
 	"assetSource": true,
 	"license": "MIT",
 	"icon": "assets/coordinates-plus/icon.png",
