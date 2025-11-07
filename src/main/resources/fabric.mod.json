@@ -7,9 +7,12 @@
 	"authors": [
 		"sawiq"
 	],
-	"contact": {},
+	"contact": {
+		"homepage": "https://modrinth.com/mod/CoordinatesPlus",
+		"sources": "https://github.com/imsawiq/CoordinatesPlus"
+	},
 	"assetSource": true,
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/coordinates-plus/icon.png",
 	"environment": "client",
 	"entrypoints": {
@@ -25,7 +28,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.16.14",
-		"minecraft": "~1.21",
+		"minecraft": ">=1.21.6 <=1.21.8",
 		"java": ">=21",
 		"modmenu": ">=11.0.0",
 		"cloth-config": ">=15.0.127"
