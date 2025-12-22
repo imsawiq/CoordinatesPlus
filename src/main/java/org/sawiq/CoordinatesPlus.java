@@ -1,6 +1,11 @@
 package org.sawiq;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
@@ -8,280 +13,397 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import org.lwjgl.glfw.GLFW;
 import org.sawiq.config.ConfigScreen;
+import org.sawiq.group.GroupHudRenderer;
+import org.sawiq.group.GroupManager;
+import org.sawiq.group.GroupProtocol;
 
 public class CoordinatesPlus implements ClientModInitializer {
-	private static final MinecraftClient mc = MinecraftClient.getInstance();
-	private static boolean isDragging = false;
-	private static double dragOffsetX = 0;
-	private static double dragOffsetY = 0;
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static final GroupManager groupManager = new GroupManager(mc);
+    private static final GroupHudRenderer groupHudRenderer = new GroupHudRenderer(mc, groupManager);
+    private static boolean isDragging = false;
+    private static double dragOffsetX = 0;
+    private static double dragOffsetY = 0;
 
-	private static KeyBinding editModeKey;
-	private static KeyBinding sendOverworldCoordsKey;
-	private static KeyBinding sendNetherCoordsKey;
-	private static boolean editMode = false;
+    private static KeyBinding editModeKey;
+    private static KeyBinding sendOverworldCoordsKey;
+    private static KeyBinding sendNetherCoordsKey;
+    private static boolean editMode = false;
 
-	@Override
-	public void onInitializeClient() {
-		editModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.coordinatesplus.edit_mode",
-				InputUtil.Type.KEYSYM,
-				GLFW.GLFW_KEY_RIGHT_ALT,
-				"category.coordinatesplus"
-		));
+    @Override
+    public void onInitializeClient() {
+        SuggestionProvider<FabricClientCommandSource> onlinePlayers = (ctx, builder) -> {
+            if (mc.getNetworkHandler() != null) {
+                for (var e : mc.getNetworkHandler().getPlayerList()) {
+                    if (e != null && e.getProfile() != null) {
+                        String name = e.getProfile().getName();
+                        if (name != null && !name.isEmpty()) {
+                            builder.suggest(name);
+                        }
+                    }
+                }
+            }
+            return builder.buildFuture();
+        };
 
-		sendOverworldCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.coordinatesplus.send_overworld",
-				InputUtil.Type.KEYSYM,
-				GLFW.GLFW_KEY_UNKNOWN,
-				"category.coordinatesplus"
-		));
+        editModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.coordinatesplus.edit_mode",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_RIGHT_ALT,
+                "category.coordinatesplus"
+        ));
 
-		sendNetherCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.coordinatesplus.send_nether",
-				InputUtil.Type.KEYSYM,
-				GLFW.GLFW_KEY_UNKNOWN,
-				"category.coordinatesplus"
-		));
+        sendOverworldCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.coordinatesplus.send_overworld",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                "category.coordinatesplus"
+        ));
 
-		HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
-			renderHud(drawContext);
-		});
+        sendNetherCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.coordinatesplus.send_nether",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                "category.coordinatesplus"
+        ));
 
-		System.out.println("Coordinates Plus initialized");
-	}
+        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
+            renderHud(drawContext);
+        });
 
-	private void renderHud(DrawContext context) {
-		if (!ConfigScreen.isHudEnabled() || mc.player == null) return;
+        ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
+            String s = message.getString();
+            int idx = s.indexOf(GroupProtocol.PREFIX);
+            if (idx >= 0) {
+                groupManager.onIncomingGroupMessage(s.substring(idx), sender != null ? sender.getId() : null);
+                return false;
+            }
+            return true;
+        });
 
-		if (mc.options.hudHidden || mc.getDebugHud().shouldShowDebugHud()) {
-			return;
-		}
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+            String s = message.getString();
+            int idx = s.indexOf(GroupProtocol.PREFIX);
+            if (idx >= 0) {
+                groupManager.onIncomingGroupMessage(s.substring(idx));
+                return false;
+            }
+            return true;
+        });
 
-		while (editModeKey.wasPressed()) {
-			editMode = !editMode;
-			if (!editMode) {
-				ConfigScreen.savePosition();
-			}
-		}
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            groupManager.tick();
+        });
 
-		while (sendOverworldCoordsKey.wasPressed()) {
-			if (mc.player != null) {
-				String prefix = ConfigScreen.useCommandPrefix() ? "!" : "";
-				mc.player.networkHandler.sendChatMessage(prefix + "+loco");
-			}
-		}
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            dispatcher.register(ClientCommandManager.literal("cpgroup")
+                    .then(ClientCommandManager.literal("create")
+                            .executes(ctx -> {
+                                groupManager.executeSubcommand("create", null);
+                                return 1;
+                            }))
+                    .then(ClientCommandManager.literal("leave")
+                            .executes(ctx -> {
+                                groupManager.executeSubcommand("leave", null);
+                                return 1;
+                            }))
+                    .then(ClientCommandManager.literal("list")
+                            .executes(ctx -> {
+                                groupManager.executeSubcommand("list", null);
+                                return 1;
+                            }))
+                    .then(ClientCommandManager.literal("invite")
+                            .then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                    .suggests(onlinePlayers)
+                                    .executes(ctx -> {
+                                        groupManager.executeSubcommand("invite", StringArgumentType.getString(ctx, "name"));
+                                        return 1;
+                                    })))
+                    .then(ClientCommandManager.literal("accept")
+                            .then(ClientCommandManager.argument("id", StringArgumentType.word())
+                                    .executes(ctx -> {
+                                        groupManager.executeSubcommand("accept", StringArgumentType.getString(ctx, "id"));
+                                        return 1;
+                                    })))
+                    .then(ClientCommandManager.literal("kick")
+                            .then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                    .suggests(onlinePlayers)
+                                    .executes(ctx -> {
+                                        groupManager.executeSubcommand("kick", StringArgumentType.getString(ctx, "name"));
+                                        return 1;
+                                    }))));
 
-		while (sendNetherCoordsKey.wasPressed()) {
-			if (mc.player != null) {
-				String prefix = ConfigScreen.useCommandPrefix() ? "!" : "";
-				mc.player.networkHandler.sendChatMessage(prefix + "+locn");
-			}
-		}
+            dispatcher.register(ClientCommandManager.literal("cpg")
+                    .redirect(dispatcher.getRoot().getChild("cpgroup")));
+        });
 
-		// обработк перетаскивания
-		handleDragging();
+        System.out.println("Coordinates Plus initialized");
+    }
 
-		double rawX = mc.player.getX();
-		double rawY = mc.player.getY();
-		double rawZ = mc.player.getZ();
+    public static GroupManager getGroupManager() {
+        return groupManager;
+    }
 
-		String dimensionKey = mc.player.getWorld().getRegistryKey().getValue().toString();
-		boolean isInNether = dimensionKey.equals("minecraft:the_nether");
-		boolean isInEnd = dimensionKey.equals("minecraft:the_end");
+    private void renderHud(DrawContext context) {
+        if (!ConfigScreen.isHudEnabled() || mc.player == null) return;
 
-		int otherX, otherZ;
-		Text dimensionLabel;
-		int dimensionColor;
+        if (mc.options.hudHidden || mc.getDebugHud().shouldShowDebugHud()) {
+            return;
+        }
 
-		if (isInNether) {
-			otherX = (int) Math.round(rawX * 8.0);
-			otherZ = (int) Math.round(rawZ * 8.0);
-			dimensionLabel = Text.translatable("text.coordinatesplus.dimension.overworld");
-			dimensionColor = 0x55FF55;
-		} else if (isInEnd) {
-			otherX = (int) Math.round(rawX);
-			otherZ = (int) Math.round(rawZ);
-			dimensionLabel = Text.translatable("text.coordinatesplus.dimension.end");
-			dimensionColor = 0x888888;
-		} else {
-			otherX = (int) Math.round(rawX / 8.0);
-			otherZ = (int) Math.round(rawZ / 8.0);
-			dimensionLabel = Text.translatable("text.coordinatesplus.dimension.nether");
-			dimensionColor = 0xFF5555;
-		}
+        while (editModeKey.wasPressed()) {
+            editMode = !editMode;
+            if (!editMode) {
+                ConfigScreen.savePosition();
+            }
+        }
 
-		int posX = (int) Math.round(rawX);
-		int posY = (int) Math.round(rawY);
-		int posZ = (int) Math.round(rawZ);
+        while (sendOverworldCoordsKey.wasPressed()) {
+            if (mc.player != null) {
+                String prefix = ConfigScreen.useCommandPrefix() ? "!" : "";
+                mc.player.networkHandler.sendChatMessage(prefix + "+loco");
+            }
+        }
 
-		float hudX = ConfigScreen.getHudX();
-		float hudY = ConfigScreen.getHudY();
-		float scale = ConfigScreen.getTextScale();
+        while (sendNetherCoordsKey.wasPressed()) {
+            if (mc.player != null) {
+                String prefix = ConfigScreen.useCommandPrefix() ? "!" : "";
+                mc.player.networkHandler.sendChatMessage(prefix + "+locn");
+            }
+        }
 
-		// фикс шакала
-		hudX = Math.round(hudX);
-		hudY = Math.round(hudY);
+        // обработка перетаскивания
+        handleDragging();
 
-		context.getMatrices().push();
-		context.getMatrices().translate(hudX, hudY, 0);
-		context.getMatrices().scale(scale, scale, 1.0f);
+        double rawX = mc.player.getX();
+        double rawY = mc.player.getY();
+        double rawZ = mc.player.getZ();
 
-		String coordText = String.format("X: %d  Y: %d  Z: %d", posX, posY, posZ);
-		String otherText = String.format("%s: [%d, %d]", dimensionLabel.getString(), otherX, otherZ);
+        String dimensionKey = mc.player.getWorld().getRegistryKey().getValue().toString();
+        boolean isInNether = dimensionKey.equals("minecraft:the_nether");
+        boolean isInEnd = dimensionKey.equals("minecraft:the_end");
 
-		int coordWidth = mc.textRenderer.getWidth(coordText);
-		int otherWidth = mc.textRenderer.getWidth(otherText);
-		int maxWidth = Math.max(coordWidth, otherWidth);
+        int otherX, otherZ;
+        Text dimensionLabel;
+        int dimensionColor;
 
-		int padding = 6;
-		int totalWidth = maxWidth + padding * 2;
-		int lineHeight = mc.textRenderer.fontHeight;
-		int totalHeight = lineHeight * 2 + padding * 2 + 2;
+        if (isInNether) {
+            otherX = (int) Math.round(rawX * 8.0);
+            otherZ = (int) Math.round(rawZ * 8.0);
+            dimensionLabel = Text.translatable("text.coordinatesplus.dimension.overworld");
+            dimensionColor = 0xFF55FF55; // ARGB
+        } else if (isInEnd) {
+            otherX = (int) Math.round(rawX);
+            otherZ = (int) Math.round(rawZ);
+            dimensionLabel = Text.translatable("text.coordinatesplus.dimension.end");
+            dimensionColor = 0xFF888888; // ARGB
+        } else {
+            otherX = (int) Math.round(rawX / 8.0);
+            otherZ = (int) Math.round(rawZ / 8.0);
+            dimensionLabel = Text.translatable("text.coordinatesplus.dimension.nether");
+            dimensionColor = 0xFFFF5555; // ARGB
+        }
 
-		if (ConfigScreen.isBackgroundEnabled()) {
-			int bgColor1, bgColor2, borderColor;
+        int posX = (int) Math.round(rawX);
+        int posY = (int) Math.round(rawY);
+        int posZ = (int) Math.round(rawZ);
 
-			if (isInNether) {
-				if (editMode) {
-					bgColor1 = 0xDD2E0F0F;
-					bgColor2 = 0xDD5C1414;
-					borderColor = 0xFFFF6B6B;
-				} else {
-					bgColor1 = 0xBB3D1616;
-					bgColor2 = 0xBB6B1F1F;
-					borderColor = 0xFFFF5555;
-				}
-			} else if (isInEnd) {
-				if (editMode) {
-					bgColor1 = 0xDD1F0F2E;
-					bgColor2 = 0xDD3D1460;
-					borderColor = 0xFFD953E4;
-				} else {
-					bgColor1 = 0xBB2B1642;
-					bgColor2 = 0xBB4A1F6B;
-					borderColor = 0xFFBF5FFF;
-				}
-			} else {
-				if (editMode) {
-					bgColor1 = 0xDD1A1A2E;
-					bgColor2 = 0xDD0F3460;
-					borderColor = 0xFF53E4D4;
-				} else {
-					bgColor1 = 0xBB16213E;
-					bgColor2 = 0xBB0F3460;
-					borderColor = 0xFF00D9FF;
-				}
-			}
+        float hudX = ConfigScreen.getHudX();
+        float hudY = ConfigScreen.getHudY();
+        float scale = ConfigScreen.getTextScale();
 
-			// основной фон
-			context.fillGradient(0, 0, totalWidth, totalHeight, bgColor1, bgColor2);
+        // фикс шакала
+        hudX = Math.round(hudX);
+        hudY = Math.round(hudY);
 
-			// обводка
-			drawBorder(context, 0, 0, totalWidth, totalHeight, 1, borderColor);
+        //  matrix3x2fstack
+        var matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(hudX, hudY, 0);
+        matrices.scale(scale, scale, 1.0f);
 
-			int lineY = lineHeight + padding + 1;
-			int lineColor;
-			if (isInNether) {
-				lineColor = 0x44FF5555;
-			} else if (isInEnd) {
-				lineColor = 0x44BF5FFF;
-			} else {
-				lineColor = 0x4400D9FF;
-			}
-			context.fill(padding, lineY, totalWidth - padding, lineY + 1, lineColor);
+        String coordText = String.format("X: %d  Y: %d  Z: %d", posX, posY, posZ);
+        String otherText = String.format("%s: [%d, %d]", dimensionLabel.getString(), otherX, otherZ);
 
-			if (editMode) {
-				String editIcon = "✥";
-				int iconWidth = mc.textRenderer.getWidth(editIcon);
-				int iconX = totalWidth - iconWidth - padding;
-				int iconY = totalHeight - lineHeight - padding + 2;
-				context.drawTextWithShadow(mc.textRenderer, editIcon, iconX, iconY, borderColor);
-			}
-		}
+        int coordWidth = mc.textRenderer.getWidth(coordText);
+        int otherWidth = mc.textRenderer.getWidth(otherText);
+        int maxWidth = Math.max(coordWidth, otherWidth);
 
-		context.drawTextWithShadow(mc.textRenderer, coordText, padding, padding, 0xFFFFFF);
+        int padding = 6;
+        int totalWidth = maxWidth + padding * 2;
+        int lineHeight = mc.textRenderer.fontHeight;
+        int totalHeight = lineHeight * 2 + padding * 2 + 2;
 
-		context.drawTextWithShadow(mc.textRenderer, otherText, padding, padding + lineHeight + 4, dimensionColor);
+        if (ConfigScreen.isBackgroundEnabled()) {
+            int bgColor1, bgColor2, borderColor;
 
-		context.getMatrices().pop();
-	}
+            if (isInNether) {
+                if (editMode) {
+                    bgColor1 = 0xDD2E0F0F;
+                    bgColor2 = 0xDD5C1414;
+                    borderColor = 0xFFFF6B6B;
+                } else {
+                    bgColor1 = 0xBB3D1616;
+                    bgColor2 = 0xBB6B1F1F;
+                    borderColor = 0xFFFF5555;
+                }
+            } else if (isInEnd) {
+                if (editMode) {
+                    bgColor1 = 0xDD1F0F2E;
+                    bgColor2 = 0xDD3D1460;
+                    borderColor = 0xFFD953E4;
+                } else {
+                    bgColor1 = 0xBB2B1642;
+                    bgColor2 = 0xBB4A1F6B;
+                    borderColor = 0xFFBF5FFF;
+                }
+            } else {
+                if (editMode) {
+                    bgColor1 = 0xDD1A1A2E;
+                    bgColor2 = 0xDD0F3460;
+                    borderColor = 0xFF53E4D4;
+                } else {
+                    bgColor1 = 0xBB16213E;
+                    bgColor2 = 0xBB0F3460;
+                    borderColor = 0xFF00D9FF;
+                }
+            }
 
-	private void handleDragging() {
-		if (!editMode || mc.getWindow() == null) {
-			isDragging = false;
-			return;
-		}
+            // основной фон
+            context.fillGradient(0, 0, totalWidth, totalHeight, bgColor1, bgColor2);
 
-		double mouseX = mc.mouse.getX() * mc.getWindow().getScaledWidth() / (double) mc.getWindow().getWidth();
-		double mouseY = mc.mouse.getY() * mc.getWindow().getScaledHeight() / (double) mc.getWindow().getHeight();
+            // обводка
+            drawBorder(context, 0, 0, totalWidth, totalHeight, 1, borderColor);
 
-		float hudX = ConfigScreen.getHudX();
-		float hudY = ConfigScreen.getHudY();
-		float scale = ConfigScreen.getTextScale();
+            int lineY = lineHeight + padding + 1;
+            int lineColor;
+            if (isInNether) {
+                lineColor = 0x44FF5555;
+            } else if (isInEnd) {
+                lineColor = 0x44BF5FFF;
+            } else {
+                lineColor = 0x4400D9FF;
+            }
+            context.fill(padding, lineY, totalWidth - padding, lineY + 1, lineColor);
 
-		if (mc.player != null) {
-			String dimensionKey = mc.player.getWorld().getRegistryKey().getValue().toString();
-			boolean isInNether = dimensionKey.equals("minecraft:the_nether");
-			boolean isInEnd = dimensionKey.equals("minecraft:the_end");
+            if (editMode) {
+                String editIcon = "✥";
+                int iconWidth = mc.textRenderer.getWidth(editIcon);
+                int iconX = totalWidth - iconWidth - padding;
+                int iconY = totalHeight - lineHeight - padding + 2;
+                context.drawTextWithShadow(mc.textRenderer, editIcon, iconX, iconY, borderColor);
+            }
+        }
 
-			Text dimensionLabel;
-			if (isInNether) {
-				dimensionLabel = Text.translatable("text.coordinatesplus.dimension.overworld");
-			} else if (isInEnd) {
-				dimensionLabel = Text.translatable("text.coordinatesplus.dimension.end");
-			} else {
-				dimensionLabel = Text.translatable("text.coordinatesplus.dimension.nether");
-			}
+        // ARGB
+        context.drawTextWithShadow(mc.textRenderer, coordText, padding, padding, 0xFFFFFFFF);
+        context.drawTextWithShadow(mc.textRenderer, otherText, padding, padding + lineHeight + 4, dimensionColor);
 
-			int posX = (int) Math.round(mc.player.getX());
-			int posY = (int) Math.round(mc.player.getY());
-			int posZ = (int) Math.round(mc.player.getZ());
-			int otherX = isInNether ? posX * 8 : posX / 8;
-			int otherZ = isInNether ? posZ * 8 : posZ / 8;
+        matrices.pop();
 
-			String coordText = String.format("X: %d  Y: %d  Z: %d", posX, posY, posZ);
-			String otherText = String.format("%s: [%d, %d]", dimensionLabel.getString(), otherX, otherZ);
+        float groupHudX = ConfigScreen.getGroupHudX();
+        float groupHudY = ConfigScreen.getGroupHudY();
+        groupHudX = Math.round(groupHudX);
+        groupHudY = Math.round(groupHudY);
 
-			int coordWidth = mc.textRenderer.getWidth(coordText);
-			int otherWidth = mc.textRenderer.getWidth(otherText);
-			int maxWidth = Math.max(coordWidth, otherWidth);
+        groupHudRenderer.render(context, (int) groupHudX, (int) groupHudY, scale, editMode, dimensionKey);
+    }
 
-			int padding = 6;
-			int hudWidth = (int) ((maxWidth + padding * 2) * scale);
-			int lineHeight = mc.textRenderer.fontHeight;
-			int hudHeight = (int) ((lineHeight * 2 + padding * 2 + 2) * scale);
+    private void handleDragging() {
+        if (!editMode || mc.getWindow() == null) {
+            isDragging = false;
+            return;
+        }
 
-			boolean isMouseOver = mouseX >= hudX && mouseX <= hudX + hudWidth &&
-					mouseY >= hudY && mouseY <= hudY + hudHeight;
+        double mouseX = mc.mouse.getX() * mc.getWindow().getScaledWidth() / (double) mc.getWindow().getWidth();
+        double mouseY = mc.mouse.getY() * mc.getWindow().getScaledHeight() / (double) mc.getWindow().getHeight();
 
-			if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
-				if (!isDragging && isMouseOver) {
-					isDragging = true;
-					dragOffsetX = mouseX - hudX;
-					dragOffsetY = mouseY - hudY;
-				}
+        float hudX = ConfigScreen.getHudX();
+        float hudY = ConfigScreen.getHudY();
+        float groupHudX = ConfigScreen.getGroupHudX();
+        float groupHudY = ConfigScreen.getGroupHudY();
+        float scale = ConfigScreen.getTextScale();
 
-				if (isDragging) {
-					float newX = (float) (mouseX - dragOffsetX);
-					float newY = (float) (mouseY - dragOffsetY);
+        if (mc.player != null) {
+            String dimensionKey = mc.player.getWorld().getRegistryKey().getValue().toString();
+            boolean isInNether = dimensionKey.equals("minecraft:the_nether");
+            boolean isInEnd = dimensionKey.equals("minecraft:the_end");
 
-					newX = Math.max(0, Math.min(newX, mc.getWindow().getScaledWidth() - hudWidth));
-					newY = Math.max(0, Math.min(newY, mc.getWindow().getScaledHeight() - hudHeight));
+            Text dimensionLabel;
+            if (isInNether) {
+                dimensionLabel = Text.translatable("text.coordinatesplus.dimension.overworld");
+            } else if (isInEnd) {
+                dimensionLabel = Text.translatable("text.coordinatesplus.dimension.end");
+            } else {
+                dimensionLabel = Text.translatable("text.coordinatesplus.dimension.nether");
+            }
 
-					ConfigScreen.setHudPosition(newX, newY);
-				}
-			} else {
-				isDragging = false;
-			}
-		}
-	}
+            int posX = (int) Math.round(mc.player.getX());
+            int posY = (int) Math.round(mc.player.getY());
+            int posZ = (int) Math.round(mc.player.getZ());
+            int otherX = isInNether ? posX * 8 : posX / 8;
+            int otherZ = isInNether ? posZ * 8 : posZ / 8;
 
-	private void drawBorder(DrawContext context, int x, int y, int width, int height, int thickness, int color) {
-		context.fill(x, y, x + width, y + thickness, color);
-		context.fill(x, y + height - thickness, x + width, y + height, color);
-		context.fill(x, y, x + thickness, y + height, color);
-		context.fill(x + width - thickness, y, x + width, y + height, color);
-	}
+            String coordText = String.format("X: %d  Y: %d  Z: %d", posX, posY, posZ);
+            String otherText = String.format("%s: [%d, %d]", dimensionLabel.getString(), otherX, otherZ);
+
+            int coordWidth = mc.textRenderer.getWidth(coordText);
+            int otherWidth = mc.textRenderer.getWidth(otherText);
+            int maxWidth = Math.max(coordWidth, otherWidth);
+
+            int padding = 6;
+            int hudWidth = (int) ((maxWidth + padding * 2) * scale);
+            int lineHeight = mc.textRenderer.fontHeight;
+            int hudHeight = (int) ((lineHeight * 2 + padding * 2 + 2) * scale);
+
+            boolean isMouseOverMain = mouseX >= hudX && mouseX <= hudX + hudWidth &&
+                    mouseY >= hudY && mouseY <= hudY + hudHeight;
+
+            int groupW = groupHudRenderer.getLastWidth();
+            int groupH = groupHudRenderer.getLastHeight();
+            boolean isMouseOverGroup = groupW > 0 && groupH > 0 && mouseX >= groupHudX && mouseX <= groupHudX + groupW &&
+                    mouseY >= groupHudY && mouseY <= groupHudY + groupH;
+
+            if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
+                if (!isDragging && (isMouseOverGroup || isMouseOverMain)) {
+                    isDragging = true;
+                    if (isMouseOverGroup) {
+                        dragOffsetX = mouseX - groupHudX;
+                        dragOffsetY = mouseY - groupHudY;
+                    } else {
+                        dragOffsetX = mouseX - hudX;
+                        dragOffsetY = mouseY - hudY;
+                    }
+                }
+
+                if (isDragging) {
+                    float newX = (float) (mouseX - dragOffsetX);
+                    float newY = (float) (mouseY - dragOffsetY);
+
+                    if (isMouseOverGroup && groupW > 0 && groupH > 0) {
+                        newX = Math.max(0, Math.min(newX, mc.getWindow().getScaledWidth() - groupW));
+                        newY = Math.max(0, Math.min(newY, mc.getWindow().getScaledHeight() - groupH));
+                        ConfigScreen.setGroupHudPosition(newX, newY);
+                    } else {
+                        newX = Math.max(0, Math.min(newX, mc.getWindow().getScaledWidth() - hudWidth));
+                        newY = Math.max(0, Math.min(newY, mc.getWindow().getScaledHeight() - hudHeight));
+                        ConfigScreen.setHudPosition(newX, newY);
+                    }
+                }
+            } else {
+                isDragging = false;
+            }
+        }
+    }
+
+    private void drawBorder(DrawContext context, int x, int y, int width, int height, int thickness, int color) {
+        context.fill(x, y, x + width, y + thickness, color);
+        context.fill(x, y + height - thickness, x + width, y + height, color);
+        context.fill(x, y, x + thickness, y + height, color);
+        context.fill(x + width - thickness, y, x + width, y + height, color);
+    }
 }

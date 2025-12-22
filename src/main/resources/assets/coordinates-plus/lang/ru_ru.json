@@ -13,6 +13,8 @@
   "text.coordinatesplus.config.hud_enabled.tooltip": "Показать или скрыть HUD координат",
   "text.coordinatesplus.config.background_enabled": "Включить фон",
   "text.coordinatesplus.config.background_enabled.tooltip": "Показать или скрыть фоновую панель HUD",
+  "text.coordinatesplus.config.group_background_enabled": "Включить фон группы",
+  "text.coordinatesplus.config.group_background_enabled.tooltip": "Показать или скрыть фоновую панель HUD группы",
   "text.coordinatesplus.config.text_scale": "Масштаб HUD",
   "text.coordinatesplus.config.text_scale.tooltip": "Настроить размер HUD",
   "text.coordinatesplus.config.command_prefix": "Добавлять ! перед командами",
@@ -21,8 +23,36 @@
   "text.coordinatesplus.config.hud_x.tooltip": "Горизонтальная позиция HUD",
   "text.coordinatesplus.config.hud_y": "Позиция Y",
   "text.coordinatesplus.config.hud_y.tooltip": "Вертикальная позиция HUD",
+  "text.coordinatesplus.config.group_hud_x": "Позиция X HUD группы",
+  "text.coordinatesplus.config.group_hud_x.tooltip": "Горизонтальная позиция HUD группы",
+  "text.coordinatesplus.config.group_hud_y": "Позиция Y HUD группы",
+  "text.coordinatesplus.config.group_hud_y.tooltip": "Вертикальная позиция HUD группы",
 
   "text.coordinatesplus.dimension.overworld": "Оверворлд",
   "text.coordinatesplus.dimension.nether": "Незер",
-  "text.coordinatesplus.dimension.end": "Н/Д"
+  "text.coordinatesplus.dimension.end": "Н/Д",
+
+  "text.coordinatesplus.group.help.commands": "Команды: /cpgroup create | /cpgroup invite <ник> | /cpgroup accept <id> | /cpgroup leave | /cpgroup list | /cpgroup kick <ник>",
+  "text.coordinatesplus.group.usage.invite": "Использование: /cpgroup invite <ник>",
+  "text.coordinatesplus.group.usage.accept": "Использование: /cpgroup accept <id>",
+  "text.coordinatesplus.group.usage.kick": "Использование: /cpgroup kick <ник>",
+
+  "text.coordinatesplus.group.error.already_in_group": "Ты уже в группе. Используй: /cpgroup leave",
+  "text.coordinatesplus.group.error.not_in_group": "Ты не в группе",
+  "text.coordinatesplus.group.error.no_invite": "Нет приглашения в группу: %s",
+  "text.coordinatesplus.group.error.not_leader": "Только лидер группы может это делать",
+  "text.coordinatesplus.group.error.member_not_found": "Участник не найден: %s",
+
+  "text.coordinatesplus.group.created": "Группа создана: %s",
+  "text.coordinatesplus.group.left": "Ты вышел из группы",
+  "text.coordinatesplus.group.joined": "Ты вступил в группу: %s",
+  "text.coordinatesplus.group.invited": "Приглашён: %s",
+  "text.coordinatesplus.group.invite_received": "Приглашение получено. Напиши: /cpgroup accept %s",
+  "text.coordinatesplus.group.invite_received_click": "%s приглашает в группу CoordinatesPlus. Нажми чтобы вступить: %s",
+  "text.coordinatesplus.group.invite_click_hover": "Нажми чтобы принять приглашение",
+  "text.coordinatesplus.group.kicked": "Кикнут: %s",
+  "text.coordinatesplus.group.kicked_you": "Тебя кикнули из группы",
+
+  "text.coordinatesplus.group.info.header": "Группа: %s",
+  "text.coordinatesplus.group.info.members_empty": "Участники: (пока нет)"
 }

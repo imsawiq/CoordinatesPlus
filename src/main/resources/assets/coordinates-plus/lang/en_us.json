@@ -13,6 +13,8 @@
   "text.coordinatesplus.config.hud_enabled.tooltip": "Show or hide the coordinates HUD",
   "text.coordinatesplus.config.background_enabled": "Enable Background",
   "text.coordinatesplus.config.background_enabled.tooltip": "Show or hide the HUD background panel",
+  "text.coordinatesplus.config.group_background_enabled": "Enable Group Background",
+  "text.coordinatesplus.config.group_background_enabled.tooltip": "Show or hide the group HUD background panel",
   "text.coordinatesplus.config.text_scale": "HUD Scale",
   "text.coordinatesplus.config.text_scale.tooltip": "Adjust the size of the HUD",
   "text.coordinatesplus.config.command_prefix": "Add ! Prefix to Commands",
@@ -21,8 +23,36 @@
   "text.coordinatesplus.config.hud_x.tooltip": "Horizontal position of the HUD",
   "text.coordinatesplus.config.hud_y": "Y Position",
   "text.coordinatesplus.config.hud_y.tooltip": "Vertical position of the HUD",
+  "text.coordinatesplus.config.group_hud_x": "Group HUD X Position",
+  "text.coordinatesplus.config.group_hud_x.tooltip": "Horizontal position of the group HUD",
+  "text.coordinatesplus.config.group_hud_y": "Group HUD Y Position",
+  "text.coordinatesplus.config.group_hud_y.tooltip": "Vertical position of the group HUD",
 
   "text.coordinatesplus.dimension.overworld": "Overworld",
   "text.coordinatesplus.dimension.nether": "Nether",
-  "text.coordinatesplus.dimension.end": "N/A"
+  "text.coordinatesplus.dimension.end": "N/A",
+
+  "text.coordinatesplus.group.help.commands": "Commands: /cpgroup create | /cpgroup invite <name> | /cpgroup accept <id> | /cpgroup leave | /cpgroup list | /cpgroup kick <name>",
+  "text.coordinatesplus.group.usage.invite": "Usage: /cpgroup invite <name>",
+  "text.coordinatesplus.group.usage.accept": "Usage: /cpgroup accept <id>",
+  "text.coordinatesplus.group.usage.kick": "Usage: /cpgroup kick <name>",
+
+  "text.coordinatesplus.group.error.already_in_group": "You are already in a group. Use: /cpgroup leave",
+  "text.coordinatesplus.group.error.not_in_group": "Not in a group",
+  "text.coordinatesplus.group.error.no_invite": "No invite for group: %s",
+  "text.coordinatesplus.group.error.not_leader": "Only the group leader can do that",
+  "text.coordinatesplus.group.error.member_not_found": "Member not found: %s",
+
+  "text.coordinatesplus.group.created": "Group created: %s",
+  "text.coordinatesplus.group.left": "Left group",
+  "text.coordinatesplus.group.joined": "Joined group: %s",
+  "text.coordinatesplus.group.invited": "Invited: %s",
+  "text.coordinatesplus.group.invite_received": "Invite received. Type: /cpgroup accept %s",
+  "text.coordinatesplus.group.invite_received_click": "%s invited you to a CoordinatesPlus group. Click to join: %s",
+  "text.coordinatesplus.group.invite_click_hover": "Click to accept invite",
+  "text.coordinatesplus.group.kicked": "Kicked: %s",
+  "text.coordinatesplus.group.kicked_you": "You were kicked from the group",
+
+  "text.coordinatesplus.group.info.header": "Group: %s",
+  "text.coordinatesplus.group.info.members_empty": "Members: (none yet)"
 }

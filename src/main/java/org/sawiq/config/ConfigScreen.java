@@ -44,6 +44,13 @@ public class ConfigScreen {
                         .setTooltip(Text.translatable("text.coordinatesplus.config.background_enabled.tooltip"))
                         .setSaveConsumer(newValue -> configData.isBackgroundEnabled = newValue)
                         .build())
+                .addEntry(entryBuilder.startBooleanToggle(
+                                Text.translatable("text.coordinatesplus.config.group_background_enabled"),
+                                configData.isGroupBackgroundEnabled)
+                        .setDefaultValue(true)
+                        .setTooltip(Text.translatable("text.coordinatesplus.config.group_background_enabled.tooltip"))
+                        .setSaveConsumer(newValue -> configData.isGroupBackgroundEnabled = newValue)
+                        .build())
                 .addEntry(entryBuilder.startFloatField(
                                 Text.translatable("text.coordinatesplus.config.text_scale"),
                                 configData.textScale)
@@ -79,6 +86,22 @@ public class ConfigScreen {
                         .setSaveConsumer(newValue -> configData.hudY = newValue)
                         .build());
 
+        builder.getOrCreateCategory(Text.translatable("text.coordinatesplus.config.category.position"))
+                .addEntry(entryBuilder.startFloatField(
+                                Text.translatable("text.coordinatesplus.config.group_hud_x"),
+                                configData.groupHudX)
+                        .setDefaultValue(10.0F)
+                        .setTooltip(Text.translatable("text.coordinatesplus.config.group_hud_x.tooltip"))
+                        .setSaveConsumer(newValue -> configData.groupHudX = newValue)
+                        .build())
+                .addEntry(entryBuilder.startFloatField(
+                                Text.translatable("text.coordinatesplus.config.group_hud_y"),
+                                configData.groupHudY)
+                        .setDefaultValue(60.0F)
+                        .setTooltip(Text.translatable("text.coordinatesplus.config.group_hud_y.tooltip"))
+                        .setSaveConsumer(newValue -> configData.groupHudY = newValue)
+                        .build());
+
         builder.setSavingRunnable(() -> {
             saveConfig();
         });
@@ -92,6 +115,10 @@ public class ConfigScreen {
 
     public static boolean isBackgroundEnabled() {
         return configData.isBackgroundEnabled;
+    }
+
+    public static boolean isGroupBackgroundEnabled() {
+        return configData.isGroupBackgroundEnabled;
     }
 
     public static boolean useCommandPrefix() {
@@ -110,9 +137,22 @@ public class ConfigScreen {
         return configData.hudY;
     }
 
+    public static float getGroupHudX() {
+        return configData.groupHudX;
+    }
+
+    public static float getGroupHudY() {
+        return configData.groupHudY;
+    }
+
     public static void setHudPosition(float x, float y) {
         configData.hudX = x;
         configData.hudY = y;
+    }
+
+    public static void setGroupHudPosition(float x, float y) {
+        configData.groupHudX = x;
+        configData.groupHudY = y;
     }
 
     public static void savePosition() {
@@ -153,9 +193,12 @@ public class ConfigScreen {
     private static class ConfigData {
         private boolean isHudEnabled = true;
         private boolean isBackgroundEnabled = true;
+        private boolean isGroupBackgroundEnabled = true;
         private boolean useCommandPrefix = false;
         private float textScale = 1.0F;
         private float hudX = 10.0F;
         private float hudY = 10.0F;
+        private float groupHudX = 10.0F;
+        private float groupHudY = 60.0F;
     }
 }
