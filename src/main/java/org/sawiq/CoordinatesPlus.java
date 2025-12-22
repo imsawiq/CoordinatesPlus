@@ -1,6 +1,11 @@
 package org.sawiq;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
@@ -8,11 +13,18 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import org.lwjgl.glfw.GLFW;
 import org.sawiq.config.ConfigScreen;
+import org.sawiq.group.GroupHudRenderer;
+import org.sawiq.group.GroupManager;
+import org.sawiq.group.GroupProtocol;
 
 public class CoordinatesPlus implements ClientModInitializer {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static final GroupManager groupManager = new GroupManager(mc);
+    private static final GroupHudRenderer groupHudRenderer = new GroupHudRenderer(mc, groupManager);
     private static boolean isDragging = false;
     private static double dragOffsetX = 0;
     private static double dragOffsetY = 0;
@@ -24,6 +36,20 @@ public class CoordinatesPlus implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        SuggestionProvider<FabricClientCommandSource> onlinePlayers = (ctx, builder) -> {
+            if (mc.getNetworkHandler() != null) {
+                for (var e : mc.getNetworkHandler().getPlayerList()) {
+                    if (e != null && e.getProfile() != null) {
+                        String name = e.getProfile().getName();
+                        if (name != null && !name.isEmpty()) {
+                            builder.suggest(name);
+                        }
+                    }
+                }
+            }
+            return builder.buildFuture();
+        };
+
         editModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.coordinatesplus.edit_mode",
                 InputUtil.Type.KEYSYM,
@@ -49,7 +75,77 @@ public class CoordinatesPlus implements ClientModInitializer {
             renderHud(drawContext);
         });
 
+        ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
+            String s = message.getString();
+            int idx = s.indexOf(GroupProtocol.PREFIX);
+            if (idx >= 0) {
+                groupManager.onIncomingGroupMessage(s.substring(idx), sender != null ? sender.getId() : null);
+                return false;
+            }
+            return true;
+        });
+
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+            String s = message.getString();
+            int idx = s.indexOf(GroupProtocol.PREFIX);
+            if (idx >= 0) {
+                groupManager.onIncomingGroupMessage(s.substring(idx));
+                return false;
+            }
+            return true;
+        });
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            groupManager.tick();
+        });
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            dispatcher.register(ClientCommandManager.literal("cpgroup")
+                    .then(ClientCommandManager.literal("create")
+                            .executes(ctx -> {
+                                groupManager.executeSubcommand("create", null);
+                                return 1;
+                            }))
+                    .then(ClientCommandManager.literal("leave")
+                            .executes(ctx -> {
+                                groupManager.executeSubcommand("leave", null);
+                                return 1;
+                            }))
+                    .then(ClientCommandManager.literal("list")
+                            .executes(ctx -> {
+                                groupManager.executeSubcommand("list", null);
+                                return 1;
+                            }))
+                    .then(ClientCommandManager.literal("invite")
+                            .then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                    .suggests(onlinePlayers)
+                                    .executes(ctx -> {
+                                        groupManager.executeSubcommand("invite", StringArgumentType.getString(ctx, "name"));
+                                        return 1;
+                                    })))
+                    .then(ClientCommandManager.literal("accept")
+                            .then(ClientCommandManager.argument("id", StringArgumentType.word())
+                                    .executes(ctx -> {
+                                        groupManager.executeSubcommand("accept", StringArgumentType.getString(ctx, "id"));
+                                        return 1;
+                                    })))
+                    .then(ClientCommandManager.literal("kick")
+                            .then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                    .suggests(onlinePlayers)
+                                    .executes(ctx -> {
+                                        groupManager.executeSubcommand("kick", StringArgumentType.getString(ctx, "name"));
+                                        return 1;
+                                    }))));
+
+            dispatcher.register(ClientCommandManager.literal("cpg")
+                    .redirect(dispatcher.getRoot().getChild("cpgroup")));
+        });
+
         System.out.println("Coordinates Plus initialized");
+    }
+
+    public static GroupManager getGroupManager() {
+        return groupManager;
     }
 
     private void renderHud(DrawContext context) {
@@ -208,6 +304,13 @@ public class CoordinatesPlus implements ClientModInitializer {
         context.drawTextWithShadow(mc.textRenderer, otherText, padding, padding + lineHeight + 4, dimensionColor);
 
         matrices.popMatrix();
+
+        float groupHudX = ConfigScreen.getGroupHudX();
+        float groupHudY = ConfigScreen.getGroupHudY();
+        groupHudX = Math.round(groupHudX);
+        groupHudY = Math.round(groupHudY);
+
+        groupHudRenderer.render(context, (int) groupHudX, (int) groupHudY, scale, editMode, dimensionKey);
     }
 
     private void handleDragging() {
@@ -221,6 +324,8 @@ public class CoordinatesPlus implements ClientModInitializer {
 
         float hudX = ConfigScreen.getHudX();
         float hudY = ConfigScreen.getHudY();
+        float groupHudX = ConfigScreen.getGroupHudX();
+        float groupHudY = ConfigScreen.getGroupHudY();
         float scale = ConfigScreen.getTextScale();
 
         if (mc.player != null) {
@@ -255,24 +360,39 @@ public class CoordinatesPlus implements ClientModInitializer {
             int lineHeight = mc.textRenderer.fontHeight;
             int hudHeight = (int) ((lineHeight * 2 + padding * 2 + 2) * scale);
 
-            boolean isMouseOver = mouseX >= hudX && mouseX <= hudX + hudWidth &&
+            boolean isMouseOverMain = mouseX >= hudX && mouseX <= hudX + hudWidth &&
                     mouseY >= hudY && mouseY <= hudY + hudHeight;
 
+            int groupW = groupHudRenderer.getLastWidth();
+            int groupH = groupHudRenderer.getLastHeight();
+            boolean isMouseOverGroup = groupW > 0 && groupH > 0 && mouseX >= groupHudX && mouseX <= groupHudX + groupW &&
+                    mouseY >= groupHudY && mouseY <= groupHudY + groupH;
+
             if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
-                if (!isDragging && isMouseOver) {
+                if (!isDragging && (isMouseOverGroup || isMouseOverMain)) {
                     isDragging = true;
-                    dragOffsetX = mouseX - hudX;
-                    dragOffsetY = mouseY - hudY;
+                    if (isMouseOverGroup) {
+                        dragOffsetX = mouseX - groupHudX;
+                        dragOffsetY = mouseY - groupHudY;
+                    } else {
+                        dragOffsetX = mouseX - hudX;
+                        dragOffsetY = mouseY - hudY;
+                    }
                 }
 
                 if (isDragging) {
                     float newX = (float) (mouseX - dragOffsetX);
                     float newY = (float) (mouseY - dragOffsetY);
 
-                    newX = Math.max(0, Math.min(newX, mc.getWindow().getScaledWidth() - hudWidth));
-                    newY = Math.max(0, Math.min(newY, mc.getWindow().getScaledHeight() - hudHeight));
-
-                    ConfigScreen.setHudPosition(newX, newY);
+                    if (isMouseOverGroup && groupW > 0 && groupH > 0) {
+                        newX = Math.max(0, Math.min(newX, mc.getWindow().getScaledWidth() - groupW));
+                        newY = Math.max(0, Math.min(newY, mc.getWindow().getScaledHeight() - groupH));
+                        ConfigScreen.setGroupHudPosition(newX, newY);
+                    } else {
+                        newX = Math.max(0, Math.min(newX, mc.getWindow().getScaledWidth() - hudWidth));
+                        newY = Math.max(0, Math.min(newY, mc.getWindow().getScaledHeight() - hudHeight));
+                        ConfigScreen.setHudPosition(newX, newY);
+                    }
                 }
             } else {
                 isDragging = false;
