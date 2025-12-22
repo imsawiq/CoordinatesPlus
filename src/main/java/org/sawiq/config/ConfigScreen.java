@@ -89,7 +89,7 @@ public class ConfigScreen {
         builder.getOrCreateCategory(Text.translatable("text.coordinatesplus.config.category.position"))
                 .addEntry(entryBuilder.startFloatField(
                                 Text.translatable("text.coordinatesplus.config.group_hud_x"),
-                                configData.groupHudX)
+                                configData.groupHudX) //h
                         .setDefaultValue(10.0F)
                         .setTooltip(Text.translatable("text.coordinatesplus.config.group_hud_x.tooltip"))
                         .setSaveConsumer(newValue -> configData.groupHudX = newValue)

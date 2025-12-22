@@ -1,4 +1,14 @@
-# Project exclude paths
-/.gradle/
-/build/
-/build/classes/java/main/
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Logs
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

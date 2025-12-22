@@ -205,7 +205,7 @@ public class CoordinatesPlus implements ClientModInitializer {
             otherX = (int) Math.round(rawX / 8.0);
             otherZ = (int) Math.round(rawZ / 8.0);
             dimensionLabel = Text.translatable("text.coordinatesplus.dimension.nether");
-            dimensionColor = 0xFFFF5555; // ARGB
+            dimensionColor = 0xFFFF5555;
         }
 
         int posX = (int) Math.round(rawX);
