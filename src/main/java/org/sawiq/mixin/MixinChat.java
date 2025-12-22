@@ -47,7 +47,7 @@ public class MixinChat {
 			overworldZ = (int) Math.round(rawZ);
 			netherX = (int) Math.round(rawX * 0.125);
 			netherZ = (int) Math.round(rawZ * 0.125);
-		}
+		} // wft
 
 		if (message.contains("+locn")) {
 			return message.replace("+locn", String.format("[%d, %d]", netherX, netherZ));

@@ -220,7 +220,7 @@ public class CoordinatesPlus implements ClientModInitializer {
         hudX = Math.round(hudX);
         hudY = Math.round(hudY);
 
-        //  matrix3x2fstack
+        //  matrix3x2fstackk
         var matrices = context.getMatrices();
         matrices.push();
         matrices.translate(hudX, hudY, 0);

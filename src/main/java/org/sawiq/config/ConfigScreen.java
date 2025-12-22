@@ -46,7 +46,7 @@ public class ConfigScreen {
                         .build())
                 .addEntry(entryBuilder.startBooleanToggle(
                                 Text.translatable("text.coordinatesplus.config.group_background_enabled"),
-                                configData.isGroupBackgroundEnabled)
+                                configData.isGroupBackgroundEnabled) //!!!
                         .setDefaultValue(true)
                         .setTooltip(Text.translatable("text.coordinatesplus.config.group_background_enabled.tooltip"))
                         .setSaveConsumer(newValue -> configData.isGroupBackgroundEnabled = newValue)
