@@ -17,7 +17,15 @@ public class MixinChat {
 			ci.cancel();
 		}
 	}
-
+    @ModifyVariable(method = "sendChatCommand", at = @At("HEAD"), argsOnly = true)
+    private String modifyOutgoingCommand(String command) {
+        var player = MinecraftClient.getInstance().player;
+        if (player != null && command != null && (command.contains("+locn") || command.contains("+loco"))) {
+            String modified = processChatMessage(player, command);
+            return modified != null ? modified : command;
+        }
+        return command;
+    }
 	@ModifyVariable(method = "sendChatMessage", at = @At("HEAD"), argsOnly = true)
 	private String modifyOutgoingMessage(String message) {
 		if (MinecraftClient.getInstance().player != null && message != null && (message.contains("+locn") || message.contains("+loco"))) {
