@@ -9,6 +9,7 @@ import java.security.SecureRandom;
 import java.util.*;
 
 public class GroupManager {
+
     private static final SecureRandom RNG = new SecureRandom();
 
     private final MinecraftClient mc;
@@ -16,6 +17,7 @@ public class GroupManager {
     private String groupId;
     private String groupToken;
     private UUID leaderUuid;
+
     private final Map<UUID, GroupMemberState> members = new HashMap<>();
     private final Set<String> pendingInvites = new HashSet<>();
     private final Map<String, String> inviteTokenByGroupId = new HashMap<>();
@@ -46,6 +48,7 @@ public class GroupManager {
             }
             return;
         }
+
         this.groupId = randomId();
         this.groupToken = randomToken();
         this.leaderUuid = mc.player != null ? mc.player.getUuid() : null;
@@ -53,6 +56,7 @@ public class GroupManager {
         this.pendingInvites.clear();
         this.inviteTokenByGroupId.clear();
         this.inviteSenderByGroupId.clear();
+
         if (mc.player != null) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.created", groupId), false);
         }
@@ -60,9 +64,11 @@ public class GroupManager {
 
     public void leaveGroup() {
         if (!isInGroup()) return;
+
         UUID self = mc.player != null ? mc.player.getUuid() : null;
         String gid = this.groupId;
         String tok = this.groupToken;
+
         this.groupId = null;
         this.groupToken = null;
         this.leaderUuid = null;
@@ -70,9 +76,11 @@ public class GroupManager {
         this.pendingInvites.clear();
         this.inviteTokenByGroupId.clear();
         this.inviteSenderByGroupId.clear();
+
         if (self != null) {
             broadcastRaw(GroupProtocol.encodeLeave(gid, tok, self));
         }
+
         if (mc.player != null) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.left"), false);
         }
@@ -100,9 +108,12 @@ public class GroupManager {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.error.not_leader"), false);
             return;
         }
+
         if (mc.player != null) {
-            sendTo(playerName, GroupProtocol.encodeInvite(groupId, groupToken, playerName, mc.player.getUuid(), mc.player.getName().getString()));
+            sendTo(playerName, GroupProtocol.encodeInvite(groupId, groupToken, playerName,
+                    mc.player.getUuid(), mc.player.getName().getString()));
         }
+
         if (mc.player != null) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.invited", playerName), false);
         }
@@ -148,6 +159,7 @@ public class GroupManager {
 
         UUID self = mc.player.getUuid();
         String name = mc.player.getName().getString();
+
         if (inviter != null) {
             String payload = GroupProtocol.encodeJoin(gid, groupToken, self, name);
             String inviterName = resolveName(inviter);
@@ -159,19 +171,23 @@ public class GroupManager {
         } else {
             broadcastRaw(GroupProtocol.encodeJoin(gid, groupToken, self, name));
         }
+
         mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.joined", gid), false);
     }
 
     public void kickByName(String playerName) {
         if (mc.player == null) return;
+
         if (!isInGroup()) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.error.not_in_group"), false);
             return;
         }
+
         if (leaderUuid == null || !leaderUuid.equals(mc.player.getUuid())) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.error.not_leader"), false);
             return;
         }
+
         if (playerName == null || playerName.isEmpty()) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.usage.kick"), false);
             return;
@@ -185,6 +201,7 @@ public class GroupManager {
                 break;
             }
         }
+
         if (target == null) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.error.member_not_found", playerName), false);
             return;
@@ -209,19 +226,22 @@ public class GroupManager {
 
     public void onIncomingGroupMessage(String rawMessage, UUID senderUuid) {
         if (rawMessage == null || !GroupProtocol.isGroupMessage(rawMessage)) return;
+
         String[] parts = rawMessage.split("\\|", -1);
         if (parts.length < 2) return;
 
         String type = parts[1];
+
         if ("INV".equals(type)) {
             if (parts.length < 5) return;
             String gid = GroupProtocol.unsafe(parts[2]);
             String tok = GroupProtocol.unsafe(parts[3]);
             String targetName = GroupProtocol.unsafe(parts[4]);
+
             if (gid.isEmpty()) return;
             if (tok.isEmpty()) return;
-
             if (mc.player == null) return;
+
             String selfName = mc.player.getName().getString();
             if (targetName != null && !targetName.isEmpty() && !targetName.equalsIgnoreCase(selfName)) {
                 return;
@@ -242,6 +262,7 @@ public class GroupManager {
             if (parts.length >= 6) {
                 inviterUuid = parseUuid(parts[5]);
             }
+
             if (parts.length >= 7) {
                 inviterName = GroupProtocol.unsafe(parts[6]);
             }
@@ -249,6 +270,7 @@ public class GroupManager {
             if (inviterUuid == null) {
                 inviterUuid = senderUuid;
             }
+
             if ((inviterName == null || inviterName.isEmpty()) && inviterUuid != null) {
                 inviterName = resolveName(inviterUuid);
             }
@@ -266,6 +288,7 @@ public class GroupManager {
                         .withUnderline(true)
                         .withClickEvent(new ClickEvent.RunCommand("/cpgroup accept " + gid))
                         .withHoverEvent(new HoverEvent.ShowText(Text.translatable("text.coordinatesplus.group.invite_click_hover"))));
+
                 String inviterDisplay = inviterName;
                 if (inviterDisplay == null || inviterDisplay.isEmpty()) {
                     if (inviterUuid != null) {
@@ -278,6 +301,7 @@ public class GroupManager {
 
                 mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.invite_received_click", inviterDisplay, clickableId), false);
             }
+
             return;
         }
 
@@ -287,10 +311,13 @@ public class GroupManager {
             String tok = GroupProtocol.unsafe(parts[3]);
             if (!Objects.equals(gid, groupId)) return;
             if (groupToken == null || !Objects.equals(tok, groupToken)) return;
+
             UUID uuid = parseUuid(parts[4]);
             if (uuid == null) return;
+
             String name = GroupProtocol.unsafe(parts[5]);
             if (mc.player != null && uuid.equals(mc.player.getUuid())) return;
+
             members.compute(uuid, (k, v) -> v != null ? v : new GroupMemberState(uuid, name));
 
             if (mc.player != null && isInGroup()) {
@@ -299,7 +326,11 @@ public class GroupManager {
                     String senderName = resolveName(senderUuid);
                     if (senderName != null && !senderName.isEmpty()) {
                         sendTo(senderName, payload);
+                    } else {
+                        broadcastRaw(payload);
                     }
+                } else {
+                    broadcastRaw(payload);
                 }
             }
             return;
@@ -311,8 +342,10 @@ public class GroupManager {
             String tok = GroupProtocol.unsafe(parts[3]);
             if (!Objects.equals(gid, groupId)) return;
             if (groupToken == null || !Objects.equals(tok, groupToken)) return;
+
             UUID uuid = parseUuid(parts[4]);
             if (uuid == null) return;
+
             members.remove(uuid);
             return;
         }
@@ -323,6 +356,7 @@ public class GroupManager {
             String tok = GroupProtocol.unsafe(parts[3]);
             if (!Objects.equals(gid, groupId)) return;
             if (groupToken == null || !Objects.equals(tok, groupToken)) return;
+
             UUID target = parseUuid(parts[4]);
             if (target == null) return;
 
@@ -345,10 +379,14 @@ public class GroupManager {
             String tok = GroupProtocol.unsafe(parts[3]);
             if (!Objects.equals(gid, groupId)) return;
             if (groupToken == null || !Objects.equals(tok, groupToken)) return;
+
             UUID uuid = parseUuid(parts[4]);
             if (uuid == null) return;
+
             if (mc.player != null && uuid.equals(mc.player.getUuid())) return;
+
             String name = GroupProtocol.unsafe(parts[5]);
+
             GroupMemberState state = members.computeIfAbsent(uuid, u -> new GroupMemberState(u, name));
             state.name = name;
             state.overworldX = parseInt(parts[6]);
@@ -364,6 +402,8 @@ public class GroupManager {
 
     public void tick() {
         if (!isInGroup() || mc.player == null) return;
+        if (mc.world == null) return;
+
         long now = System.currentTimeMillis();
         if (now - lastBroadcastMs < 250) return;
         lastBroadcastMs = now;
@@ -378,13 +418,15 @@ public class GroupManager {
         double rawX = mc.player.getX();
         double rawY = mc.player.getY();
         double rawZ = mc.player.getZ();
-        String dimKey = mc.player.getWorld().getRegistryKey().getValue().toString();
+
+        String dimKey = mc.world.getRegistryKey().getValue().toString();
         boolean inNether = "minecraft:the_nether".equals(dimKey);
 
         if (inNether) {
             neX = (int) Math.round(rawX);
             neY = (int) Math.round(rawY);
             neZ = (int) Math.round(rawZ);
+
             owX = (int) Math.round(rawX * 8.0);
             owY = neY;
             owZ = (int) Math.round(rawZ * 8.0);
@@ -392,6 +434,7 @@ public class GroupManager {
             owX = (int) Math.round(rawX);
             owY = (int) Math.round(rawY);
             owZ = (int) Math.round(rawZ);
+
             neX = (int) Math.round(rawX * 0.125);
             neY = owY;
             neZ = (int) Math.round(rawZ * 0.125);
@@ -401,7 +444,6 @@ public class GroupManager {
                 owX, owY, owZ,
                 neX, neY, neZ,
                 dimKey, now);
-
         broadcastRaw(msg);
     }
 
@@ -420,6 +462,7 @@ public class GroupManager {
 
         String sub = args[1];
         String arg = args.length >= 3 ? args[2] : null;
+
         executeSubcommand(sub, arg);
         return true;
     }
@@ -434,14 +477,17 @@ public class GroupManager {
             createGroup();
             return;
         }
+
         if ("leave".equals(sub)) {
             leaveGroup();
             return;
         }
+
         if ("list".equals(sub)) {
             listMembers();
             return;
         }
+
         if ("invite".equals(sub)) {
             if (arg == null || arg.isEmpty()) {
                 if (showHelpOnError && mc.player != null) {
@@ -452,6 +498,7 @@ public class GroupManager {
             invite(arg);
             return;
         }
+
         if ("accept".equals(sub)) {
             if (arg == null || arg.isEmpty()) {
                 if (showHelpOnError && mc.player != null) {
@@ -488,6 +535,7 @@ public class GroupManager {
 
             String name = resolveName(uuid);
             if (name == null || name.isEmpty()) continue;
+
             sendTo(name, payload);
         }
     }
@@ -499,6 +547,7 @@ public class GroupManager {
 
     private void listMembers() {
         if (mc.player == null) return;
+
         if (!isInGroup()) {
             mc.player.sendMessage(Text.translatable("text.coordinatesplus.group.error.not_in_group"), false);
             return;
@@ -509,6 +558,7 @@ public class GroupManager {
         String selfLine = mc.player.getName().getString() + " (you)" +
                 " | OW: " + (int) Math.round(mc.player.getX()) + " " + (int) Math.round(mc.player.getY()) + " " + (int) Math.round(mc.player.getZ()) +
                 " | N: " + (int) Math.round(mc.player.getX() * 0.125) + " " + (int) Math.round(mc.player.getY()) + " " + (int) Math.round(mc.player.getZ() * 0.125);
+
         mc.player.sendMessage(Text.literal(selfLine), false);
 
         if (members.isEmpty()) {
@@ -519,7 +569,8 @@ public class GroupManager {
         for (GroupMemberState m : members.values()) {
             if (m == null) continue;
             String name = m.name == null ? "?" : m.name;
-            String line = name + " | OW: " + m.overworldX + " " + m.overworldY + " " + m.overworldZ + " | N: " + m.netherX + " " + m.netherY + " " + m.netherZ;
+            String line = name + " | OW: " + m.overworldX + " " + m.overworldY + " " + m.overworldZ +
+                    " | N: " + m.netherX + " " + m.netherY + " " + m.netherZ;
             mc.player.sendMessage(Text.literal(line), false);
         }
     }
@@ -528,7 +579,7 @@ public class GroupManager {
         if (mc.getNetworkHandler() == null) return null;
         var entry = mc.getNetworkHandler().getPlayerListEntry(uuid);
         if (entry == null || entry.getProfile() == null) return null;
-        return entry.getProfile().getName();
+        return entry.getProfile().name();
     }
 
     private static String randomId() {

@@ -54,5 +54,6 @@
   "text.coordinatesplus.group.kicked_you": "Тебя кикнули из группы",
 
   "text.coordinatesplus.group.info.header": "Группа: %s",
-  "text.coordinatesplus.group.info.members_empty": "Участники: (пока нет)"
+  "text.coordinatesplus.group.info.members_empty": "Участники: (пока нет)",
+  "key.category.coordinatesplus.coordinatesplus": "CoordinatesPlus"
 }

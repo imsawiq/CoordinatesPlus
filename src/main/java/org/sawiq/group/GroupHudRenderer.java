@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class GroupHudRenderer {
+
     private final MinecraftClient mc;
     private final GroupManager groupManager;
 
@@ -37,14 +38,18 @@ public class GroupHudRenderer {
         int rowHeight = Math.max(lineHeight * 2 + 2, headSize) + 2;
 
         int maxTextWidth = 0;
+
         List<String> line1 = new ArrayList<>(members.size());
         List<String> line2 = new ArrayList<>(members.size());
+
         for (GroupMemberState m : members) {
             String name = m.name == null ? "?" : m.name;
             String prefix = formatRadarPrefix(m);
             line1.add(prefix + name);
+
             String coords = formatCoordsLine(m);
             line2.add(coords);
+
             maxTextWidth = Math.max(maxTextWidth, mc.textRenderer.getWidth(prefix + name));
             maxTextWidth = Math.max(maxTextWidth, getCoordsWidth(m));
         }
@@ -130,6 +135,7 @@ public class GroupHudRenderer {
 
             context.drawTextWithShadow(mc.textRenderer, line1.get(i), textX, textY1, 0xFFFFFFFF);
             drawCoordsColored(context, m, textX, textY2);
+
             y += rowHeight;
         }
 
@@ -142,22 +148,28 @@ public class GroupHudRenderer {
         boolean inEnd = "minecraft:the_end".equals(dim);
 
         if (inNether) {
-            return "N: " + m.netherX + " " + m.netherY + " " + m.netherZ + "  OW: " + m.overworldX + " " + m.overworldZ;
+            return "N: " + m.netherX + " " + m.netherY + " " + m.netherZ +
+                    " OW: " + m.overworldX + " " + m.overworldZ;
         }
+
         if (inEnd) {
             return "End: " + m.overworldX + " " + m.overworldY + " " + m.overworldZ;
         }
-        return "OW: " + m.overworldX + " " + m.overworldY + " " + m.overworldZ + "  N: " + m.netherX + " " + m.netherZ;
+
+        return "OW: " + m.overworldX + " " + m.overworldY + " " + m.overworldZ +
+                " N: " + m.netherX + " " + m.netherZ;
     }
 
     private String formatRadarPrefix(GroupMemberState m) {
         if (mc.player == null) return "";
+        if (mc.world == null) return "";
 
-        String selfDim = mc.player.getWorld().getRegistryKey().getValue().toString();
+        String selfDim = mc.world.getRegistryKey().getValue().toString();
         boolean selfNether = "minecraft:the_nether".equals(selfDim);
 
         double dx;
         double dz;
+
         if (selfNether) {
             int selfX = (int) Math.round(mc.player.getX());
             int selfZ = (int) Math.round(mc.player.getZ());
@@ -184,6 +196,7 @@ public class GroupHudRenderer {
         double yawRad = Math.toRadians(mc.player.getYaw());
         double fx = -Math.sin(yawRad);
         double fz = Math.cos(yawRad);
+
         // Right vector = forward rotated 90° to the right in Minecraft's coordinate system.
         // (rx, rz) = (-fz, fx)
         double rx = -fz;
@@ -195,6 +208,7 @@ public class GroupHudRenderer {
         // 0 = forward, +90 = right, -90 = left
         double rel = Math.atan2(right, forward);
         double deg = Math.toDegrees(rel);
+
         if (deg >= -22.5 && deg < 22.5) return "↑";
         if (deg >= 22.5 && deg < 67.5) return "↗";
         if (deg >= 67.5 && deg < 112.5) return "→";
@@ -248,6 +262,7 @@ public class GroupHudRenderer {
         if (inNether) {
             return mc.textRenderer.getWidth(ne) + gap + mc.textRenderer.getWidth(ow);
         }
+
         return mc.textRenderer.getWidth(ow) + gap + mc.textRenderer.getWidth(ne);
     }
 

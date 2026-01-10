@@ -11,12 +11,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public class MixinChat {
+
     @Inject(method = "sendChatMessage", at = @At("HEAD"), cancellable = true)
     private void onSendChatMessage(String message, CallbackInfo ci) {
         if (CoordinatesPlus.getGroupManager().handleOutgoingCommand(message)) {
             ci.cancel();
         }
     }
+
     @ModifyVariable(method = "sendChatCommand", at = @At("HEAD"), argsOnly = true)
     private String modifyOutgoingCommand(String command) {
         var player = MinecraftClient.getInstance().player;
@@ -26,9 +28,12 @@ public class MixinChat {
         }
         return command;
     }
+
     @ModifyVariable(method = "sendChatMessage", at = @At("HEAD"), argsOnly = true)
     private String modifyOutgoingMessage(String message) {
-        if (MinecraftClient.getInstance().player != null && message != null && (message.contains("+locn") || message.contains("+loco"))) {
+        if (MinecraftClient.getInstance().player != null &&
+                message != null &&
+                (message.contains("+locn") || message.contains("+loco"))) {
             String modifiedMessage = processChatMessage(MinecraftClient.getInstance().player, message);
             if (modifiedMessage != null) {
                 return modifiedMessage;
@@ -42,9 +47,13 @@ public class MixinChat {
 
         double rawX = player.getX();
         double rawZ = player.getZ();
-        boolean isInNether = player.getWorld().getRegistryKey().getValue().toString().equals("minecraft:the_nether");
+
+        var world = MinecraftClient.getInstance().world;
+        boolean isInNether = world != null &&
+                world.getRegistryKey().getValue().toString().equals("minecraft:the_nether");
 
         int netherX, netherZ, overworldX, overworldZ;
+
         if (isInNether) {
             netherX = (int) Math.round(rawX);
             netherZ = (int) Math.round(rawZ);
@@ -62,6 +71,7 @@ public class MixinChat {
         } else if (message.contains("+loco")) {
             return message.replace("+loco", String.format("[%d, %d]", overworldX, overworldZ));
         }
+
         return null;
     }
 }

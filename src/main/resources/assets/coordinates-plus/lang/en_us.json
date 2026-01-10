@@ -54,5 +54,7 @@
   "text.coordinatesplus.group.kicked_you": "You were kicked from the group",
 
   "text.coordinatesplus.group.info.header": "Group: %s",
-  "text.coordinatesplus.group.info.members_empty": "Members: (none yet)"
+  "text.coordinatesplus.group.info.members_empty": "Members: (none yet)",
+  "key.category.coordinatesplus.coordinatesplus": "CoordinatesPlus"
+
 }
