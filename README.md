@@ -1,34 +1,37 @@
 https://modrinth.com/mod/coordinatesplus
 
-# English:
+# English
 
-**Coordinates Plus** is a client-side Fabric mod for Minecraft that provides a modern, customizable coordinates display with beautiful dimension-themed styling and convenient coordinate sharing features.
+**Coordinates Plus** is a client-side Fabric mod for Minecraft that delivers a modern, customizable coordinates HUD with dimension-themed styling, quick sharing tools, and a synced group radar.
 
-**Why do you need this?**
-If you often share coordinates with friends, travel between dimensions, or just want a more stylish alternative to the F3 debugging screen, this mod is perfect for you. It displays coordinates in an elegant HUD that automatically calculates coordinates in another dimension that you are not in. Adapts colors depending on the current measurement, making it both functional and visually appealing.
+**Why do you need this?**  
+If you often share coordinates with friends, hop between dimensions, or simply want a stylish alternative to the F3 screen, this mod is for you. It renders an elegant HUD, automatically converts coordinates for the other dimension, adapts colors to your current world, and now lets your group see each other’s positions in real time.
 
-**Key Features**:
+**Key Features**
 
-- **Dimension-Themed Colors**: Automatic color schemes - blue for Overworld, red for Nether, purple for End.
-- **Draggable HUD**: Press _Right Alt_ to enter edit mode and drag the panel anywhere on your screen.
-- **Smart Coordinate Conversion**: Shows equivalent coordinates for Nether ↔ Overworld conversion in real-time.
-- **Quick Coordinate Sharing**: Assignable keybinds to instantly send coordinates to chat _(+loco, +locn)_.
-- **Customizable Appearance**: Toggle background on/off, adjust scale, configure command prefix _(!​)_.
-- **Full Localization**: Supports English and Russian languages.
+- **Dimension-Themed Colors** – Automatic palettes: blue (Overworld), red (Nether), purple (End).
+- **Draggable HUD** – Press _Right Alt_ to toggle edit mode and drag the panel anywhere.
+- **Smart Coordinate Conversion** – Nether ↔ Overworld conversions shown live.
+- **Quick Coordinate Sharing** – Bind keys to instantly send chat macros _(+loco, +locn)_.
+- **Customizable Appearance** – Toggle background, adjust scale, set command prefix _(!)_.
+- **Full Localization** – English and Russian translations.
+- **Group Radar HUD** – Use `/cpgroup` or `/cpg` commands to create/invite. See every member’s coordinates, distance in meters, facing direction, and current dimension, plus radar arrows that point to them.
 
+---
 
-# Русский:
+# Русский
 
-**Coordinates Plus** — это клиентский Fabric мод для Minecraft, который предоставляет современное настраиваемое отображение координат с красивым стилем для разных измерений и удобными функциями обмена координатами.
+**Coordinates Plus** — клиентский Fabric-мод для Minecraft с современным HUD координат, адаптируемым стилем под измерения, удобной отправкой координат и синхронизированным групповым радаром.
 
-**Зачем это нужно?**
-Если вы часто делитесь координатами с друзьями, путешествуете между измерениями или просто хотите более стильную альтернативу экрану отладки F3, этот мод идеально подходит для вас. Он отображает координаты в элегантном HUD, который автоматически вычисляет координаты в другом измерении, в котором вы не находитесь. Адаптирует цвета в зависимости от текущего измерения, делая его одновременно функциональным и визуально привлекательным.
+**Зачем это нужно?**  
+Если вы часто делитесь координатами с друзьями, путешествуете между измерениями или хотите стильную замену экрану F3, мод идеально подойдёт. Он отображает элегантный HUD, автоматически считает координаты для другого измерения, подбирает цвета под текущее измерение и теперь позволяет вашей группе видеть позиции друг друга в реальном времени.
 
-**Основные возможности**:
+**Основные возможности**
 
-- **Цветовые темы измерений**: Автоматические цветовые схемы - синий для Оверворлда, красный для Незера, фиолетовый для Энда.
-- **Перетаскиваемый HUD**: Нажмите _Right Alt_ для входа в режим редактирования и перетащите панель в любое место экрана.
-- **Умная конвертация координат**: Показывает эквивалентные координаты для конвертации Незер ↔ Оверворлд в реальном времени.
-- **Быстрая отправка координат**: Назначаемые горячие клавиши для мгновенной отправки координат в чат _(+loco, +locn)_.
-- **Настраиваемый внешний вид**: Переключение фона вкл/выкл, регулировка масштаба, настройка префикса команд _(!​)_.
-- **Полная локализация**: Поддержка английского и русского языков.
+- **Цветовые темы измерений** – Синий (Оверворлд), красный (Незер), фиолетовый (Энд).
+- **Перетаскиваемый HUD** – Нажмите _Right Alt_, чтобы войти в режим редактирования и перетащить панель.
+- **Умная конвертация координат** – Незер ↔ Оверворлд в реальном времени.
+- **Быстрая отправка координат** – Горячие клавиши для мгновенных чат-команд _(+loco, +locn)_.
+- **Настройка внешнего вида** – Фон вкл/выкл, масштаб, префикс команд _(!)_.
+- **Полная локализация** – Поддерживаются английский и русский.
+- **Групповой радар HUD** – Используйте `/cpgroup` или `/cpg` для создания/приглашений. Видите координаты всех участников, расстояние в метрах, направление взгляда, текущее измерение и стрелки радара, показывающие на каждого игрока.
