@@ -13,8 +13,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import org.lwjgl.glfw.GLFW;
@@ -24,11 +22,9 @@ import org.sawiq.group.GroupManager;
 import org.sawiq.group.GroupProtocol;
 
 public class CoordinatesPlus implements ClientModInitializer {
-
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private static final GroupManager groupManager = new GroupManager(mc);
     private static final GroupHudRenderer groupHudRenderer = new GroupHudRenderer(mc, groupManager);
-
     private static boolean isDragging = false;
     private static double dragOffsetX = 0;
     private static double dragOffsetY = 0;
@@ -36,21 +32,15 @@ public class CoordinatesPlus implements ClientModInitializer {
     private static KeyBinding editModeKey;
     private static KeyBinding sendOverworldCoordsKey;
     private static KeyBinding sendNetherCoordsKey;
-
     private static boolean editMode = false;
-
-    // гейбинды 1.21.9-1.21.11
-    private static final KeyBinding.Category KEY_CATEGORY =
-            new KeyBinding.Category(Identifier.of("coordinatesplus", "coordinatesplus"));
 
     @Override
     public void onInitializeClient() {
-
         SuggestionProvider<FabricClientCommandSource> onlinePlayers = (ctx, builder) -> {
             if (mc.getNetworkHandler() != null) {
                 for (var e : mc.getNetworkHandler().getPlayerList()) {
                     if (e != null && e.getProfile() != null) {
-                        String name = e.getProfile().name();
+                        String name = e.getProfile().getName();
                         if (name != null && !name.isEmpty()) {
                             builder.suggest(name);
                         }
@@ -64,21 +54,21 @@ public class CoordinatesPlus implements ClientModInitializer {
                 "key.coordinatesplus.edit_mode",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_ALT,
-                KEY_CATEGORY
+                "category.coordinatesplus"
         ));
 
         sendOverworldCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.coordinatesplus.send_overworld",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
-                KEY_CATEGORY
+                "category.coordinatesplus"
         ));
 
         sendNetherCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.coordinatesplus.send_nether",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
-                KEY_CATEGORY
+                "category.coordinatesplus"
         ));
 
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
@@ -89,10 +79,7 @@ public class CoordinatesPlus implements ClientModInitializer {
             String s = message.getString();
             int idx = s.indexOf(GroupProtocol.PREFIX);
             if (idx >= 0) {
-                groupManager.onIncomingGroupMessage(
-                        s.substring(idx),
-                        sender != null ? sender.id() : null
-                );
+                groupManager.onIncomingGroupMessage(s.substring(idx), sender != null ? sender.getId() : null);
                 return false;
             }
             return true;
@@ -196,10 +183,7 @@ public class CoordinatesPlus implements ClientModInitializer {
         double rawY = mc.player.getY();
         double rawZ = mc.player.getZ();
 
-        if (mc.world == null) {
-            return;
-        }
-        String dimensionKey = mc.world.getRegistryKey().getValue().toString();
+        String dimensionKey = mc.player.getWorld().getRegistryKey().getValue().toString();
         boolean isInNether = dimensionKey.equals("minecraft:the_nether");
         boolean isInEnd = dimensionKey.equals("minecraft:the_end");
 
@@ -221,7 +205,7 @@ public class CoordinatesPlus implements ClientModInitializer {
             otherX = (int) Math.round(rawX / 8.0);
             otherZ = (int) Math.round(rawZ / 8.0);
             dimensionLabel = Text.translatable("text.coordinatesplus.dimension.nether");
-            dimensionColor = 0xFFFF5555;
+            dimensionColor = 0xFFFF5555; // ARGB
         }
 
         int posX = (int) Math.round(rawX);
@@ -236,23 +220,32 @@ public class CoordinatesPlus implements ClientModInitializer {
         hudX = Math.round(hudX);
         hudY = Math.round(hudY);
 
-        // matrix3x2fstack
+        //  matrix3x2fstackk
         var matrices = context.getMatrices();
-        matrices.pushMatrix();
-        matrices.translate(hudX, hudY);
-        matrices.scale(scale, scale);
+        matrices.push();
+        matrices.translate(hudX, hudY, 0);
+        matrices.scale(scale, scale, 1.0f);
 
-        String coordText = String.format("X: %d Y: %d Z: %d", posX, posY, posZ);
+        String coordText = String.format("X: %d  Y: %d  Z: %d", posX, posY, posZ);
         String otherText = String.format("%s: [%d, %d]", dimensionLabel.getString(), otherX, otherZ);
+
+        boolean showFps = true;
+        int fps = mc.getCurrentFps();
+        String fpsText = "FPS: " + fps;
+        int fpsColor = fps >= 60 ? 0xFF55FF55 : (fps >= 30 ? 0xFFFFFF55 : 0xFFFF5555);
 
         int coordWidth = mc.textRenderer.getWidth(coordText);
         int otherWidth = mc.textRenderer.getWidth(otherText);
         int maxWidth = Math.max(coordWidth, otherWidth);
+        if (showFps) {
+            maxWidth = Math.max(maxWidth, mc.textRenderer.getWidth(fpsText));
+        }
 
         int padding = 6;
         int totalWidth = maxWidth + padding * 2;
         int lineHeight = mc.textRenderer.fontHeight;
-        int totalHeight = lineHeight * 2 + padding * 2 + 2;
+        int rowPitch = lineHeight + 4;
+        int totalHeight = lineHeight * 2 + padding * 2 + 2 + (showFps ? rowPitch : 0);
 
         if (ConfigScreen.isBackgroundEnabled()) {
             int bgColor1, bgColor2, borderColor;
@@ -305,6 +298,10 @@ public class CoordinatesPlus implements ClientModInitializer {
                 lineColor = 0x4400D9FF;
             }
             context.fill(padding, lineY, totalWidth - padding, lineY + 1, lineColor);
+            if (showFps) {
+                int lineY2 = lineY + rowPitch;
+                context.fill(padding, lineY2, totalWidth - padding, lineY2 + 1, lineColor);
+            }
 
             if (editMode) {
                 String editIcon = "✥";
@@ -317,9 +314,12 @@ public class CoordinatesPlus implements ClientModInitializer {
 
         // ARGB
         context.drawTextWithShadow(mc.textRenderer, coordText, padding, padding, 0xFFFFFFFF);
-        context.drawTextWithShadow(mc.textRenderer, otherText, padding, padding + lineHeight + 4, dimensionColor);
+        context.drawTextWithShadow(mc.textRenderer, otherText, padding, padding + rowPitch, dimensionColor);
+        if (showFps) {
+            context.drawTextWithShadow(mc.textRenderer, fpsText, padding, padding + rowPitch * 2, fpsColor);
+        }
 
-        matrices.popMatrix();
+        matrices.pop();
 
         float groupHudX = ConfigScreen.getGroupHudX();
         float groupHudY = ConfigScreen.getGroupHudY();
@@ -344,8 +344,8 @@ public class CoordinatesPlus implements ClientModInitializer {
         float groupHudY = ConfigScreen.getGroupHudY();
         float scale = ConfigScreen.getTextScale();
 
-        if (mc.player != null && mc.world != null) {
-            String dimensionKey = mc.world.getRegistryKey().getValue().toString();
+        if (mc.player != null) {
+            String dimensionKey = mc.player.getWorld().getRegistryKey().getValue().toString();
             boolean isInNether = dimensionKey.equals("minecraft:the_nether");
             boolean isInEnd = dimensionKey.equals("minecraft:the_end");
 
@@ -364,7 +364,7 @@ public class CoordinatesPlus implements ClientModInitializer {
             int otherX = isInNether ? posX * 8 : posX / 8;
             int otherZ = isInNether ? posZ * 8 : posZ / 8;
 
-            String coordText = String.format("X: %d Y: %d Z: %d", posX, posY, posZ);
+            String coordText = String.format("X: %d  Y: %d  Z: %d", posX, posY, posZ);
             String otherText = String.format("%s: [%d, %d]", dimensionLabel.getString(), otherX, otherZ);
 
             int coordWidth = mc.textRenderer.getWidth(coordText);
@@ -372,18 +372,20 @@ public class CoordinatesPlus implements ClientModInitializer {
             int maxWidth = Math.max(coordWidth, otherWidth);
 
             int padding = 6;
+            boolean showFps = true;
+            if (showFps) {
+                maxWidth = Math.max(maxWidth, mc.textRenderer.getWidth("FPS: " + mc.getCurrentFps()));
+            }
             int hudWidth = (int) ((maxWidth + padding * 2) * scale);
             int lineHeight = mc.textRenderer.fontHeight;
-            int hudHeight = (int) ((lineHeight * 2 + padding * 2 + 2) * scale);
+            int hudHeight = (int) ((lineHeight * 2 + padding * 2 + 2 + (showFps ? lineHeight + 4 : 0)) * scale);
 
             boolean isMouseOverMain = mouseX >= hudX && mouseX <= hudX + hudWidth &&
                     mouseY >= hudY && mouseY <= hudY + hudHeight;
 
             int groupW = groupHudRenderer.getLastWidth();
             int groupH = groupHudRenderer.getLastHeight();
-
-            boolean isMouseOverGroup = groupW > 0 && groupH > 0 &&
-                    mouseX >= groupHudX && mouseX <= groupHudX + groupW &&
+            boolean isMouseOverGroup = groupW > 0 && groupH > 0 && mouseX >= groupHudX && mouseX <= groupHudX + groupW &&
                     mouseY >= groupHudY && mouseY <= groupHudY + groupH;
 
             if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
